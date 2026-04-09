@@ -1,8 +1,10 @@
+# SoC Automation
+
 Die Zendure Systeme benötigen 100% SoC zur Akkukalibrierung.
 Nun ist dieser im Sommer oft schon am Vormittag erreicht und die Systeme stehen über Stunden mit 100% SoC.
 Um dies zu vermeiden, habe ich diese Automation geschrieben.
 Die Automation prüft alle 30 min auf Basis der Intergration Solcast PV forecast die restliche PV Produktion für den aktuellen Tag. Ist diese 2,5x größer als die Restkapazität des Systems,
-wird der SoC auf 90% gesetzt. Fällt die restliche PV PRoduktion des Tages auf <2,5x Restkapazität des Systems, wird der SoC wieder auf 100% gesetzt.
+wird der SoC auf 90% gesetzt. Fällt die restliche PV PRoduktion des Tages auf <2,5x Restkapazität des Systems (kann angepasst werden), wird der SoC wieder auf 100% gesetzt.
 Ziel: Fertigladen erst so spät wie möglich.
 
 
