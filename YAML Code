@@ -1,0 +1,71 @@
+alias: Speicher-SoC Automatik
+description: Optimierter SoC basierend auf heutiger PV-Restprognose (Faktor 2.5)
+triggers:
+  - minutes: /30
+    trigger: time_pattern
+conditions:
+  - condition: state
+    entity_id: input_boolean.soc_automatik
+    state: "on"
+actions:
+  - variables:
+      soc_now: "{{ states('sensor.soc_gesamt_sf_pro') | float(0) }}"
+      packsl2: "{{ states('sensor.l2_solarflow_2400_ac_pack_num') | int(1) }}"
+      packsl3: "{{ states('sensor.l3_solarflow_2400_ac_pack_num') | int(1) }}"
+      U100: "{{ ((packsl2 + packsl3) * 2.88 + 2.4) | float(0) | round(2) }}"
+      rest_to_100: "{{ (U100 * (100 - soc_now) / 100) | round(2) }}"
+      today_raw: >-
+        {{
+        states('sensor.solcast_pv_forecast_prognose_verbleibende_leistung_heute')
+        }}
+      today_kwh: "{{ today_raw | float(0) }}"
+      today_known: "{{ today_raw not in ['unknown','unavailable','none','None',''] }}"
+      fac_rest: "{{ (2.5 * rest_to_100) | round(2) }}"
+      soc_set_now: "{{ states('input_number.gesamt_soc_max') | int(90) }}"
+      target_soc_raw: |-
+        {% if today_known %}
+          {% if today_kwh > fac_rest %}
+            90
+          {% else %}
+            100
+          {% endif %}
+        {% else %}
+          {{ soc_set_now }}
+        {% endif %}
+      target_soc: "{{ [target_soc_raw | int, 70] | max }}"
+      reason: |-
+        {% if today_known %}
+          {% if target_soc | int == 90 %}
+            Genug Sonne! PV Rest ({{ today_kwh }} kWh) > 2.5x Bedarf ( Bedarf: {{ fac_rest }} kWh/ Rest: {{ rest_to_100 }} kWh).
+          {% else %}
+            Zu wenig Sonne. PV Rest ({{ today_kwh }} kWh) < 2.5x Bedarf ({{ fac_rest }} kWh).
+          {% endif %}
+        {% else %}
+          Prognose nicht verfügbar. Wert bleibt bei {{ soc_set_now }}%.
+        {% endif %}
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ (target_soc | int) != (soc_set_now | int) }}"
+        sequence:
+          - target:
+              entity_id: input_number.gesamt_soc_max
+            data:
+              value: "{{ target_soc | int }}"
+            action: input_number.set_value
+          - delay: "00:00:10"
+          - target:
+              entity_id: input_number.gesamt_soc_max
+            data:
+              value: "{{ target_soc | int }}"
+            action: input_number.set_value
+          - target:
+              entity_id: input_number.zendure_soc_target
+            data:
+              value: "{{ target_soc | int }}"
+            action: input_number.set_value
+          - data:
+              title: "SoC-Ziel angepasst: {{ target_soc | int }}%"
+              message: "{{ reason }}"
+            action: persistent_notification.create
+mode: single
