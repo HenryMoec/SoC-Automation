@@ -8,9 +8,13 @@ Ziel: Fertigladen erst so spät wie möglich.
 
 Entitäten:
 Schalter zum Aktivieren/Deaktivieren der Automation: input_boolean.soc_automatik
+
 Gesamt SoC des Systems: sensor.soc_gesamt_sf_pro
+
 Anzahl an Akkus pro Gerät: sensor.l1_solarflow_2400_pro_batterieanzahl/sensor.l2_solarflow_2400_ac_pack_num/sensor.l3_solarflow_2400_ac_pack_num
+
 PV Forecast: sensor.solcast_pv_forecast_prognose_verbleibende_leistung_heute
+
 Max Soc: input_number.gesamt_soc_max (Ich habe hier einen Helfer um die maxSoCs aller Geräte über einen Regler zu steuern. Bei einem Gerät ist dies die maxSoC Entität)
 
 U100: "{{ ((packsl2 + packsl3) * 2.88 + packsl1 * 2.4) | float(0) | round(2) }}"
